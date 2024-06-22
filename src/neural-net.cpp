@@ -250,12 +250,13 @@ void Net::getResults(vector<double> &resultVals) const
 void Net::backProp(const std::vector<double> &targetVals)
 {
 	// Calculate overal net error (RMS of output neuron errors)
-
 	Layer &outputLayer = m_layers.back();
 	m_error = 0.0;
 
+	// What is the output layer?
 	for(unsigned n = 0; n < outputLayer.size() - 1; ++n)
 	{
+		// How does the target value correlate to the output layer? Is the output layer just the output?
 		double delta = targetVals[n] - outputLayer[n].getOutputVal();
 		m_error += delta *delta;
 	}
@@ -267,14 +268,14 @@ void Net::backProp(const std::vector<double> &targetVals)
 	m_recentAverageError = 
 			(m_recentAverageError * m_recentAverageSmoothingFactor + m_error)
 			/ (m_recentAverageSmoothingFactor + 1.0);
+	
 	// Calculate output layer gradients
-
 	for(unsigned n = 0; n < outputLayer.size() - 1; ++n)
 	{
 		outputLayer[n].calcOutputGradients(targetVals[n]);
 	}
+	
 	// Calculate gradients on hidden layers
-
 	for(unsigned layerNum = m_layers.size() - 2; layerNum > 0; --layerNum)
 	{
 		Layer &hiddenLayer = m_layers[layerNum];
