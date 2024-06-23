@@ -253,29 +253,54 @@ void Net::backProp(const std::vector<double> &targetVals)
 	Layer &outputLayer = m_layers.back();
 	m_error = 0.0;
 
-	// What is the output layer?
+	// TODO: print out outputLayer.size()
+	cout << "Output Layer Size: " << outputLayer.size() << endl;
+
+	// Q: What is the output layer?
+	// A: The output layer is the last layer in the neural network where the final results are produced after processing the inputs through all the previous layers.
 	for(unsigned n = 0; n < outputLayer.size() - 1; ++n)
 	{
-		// How does the target value correlate to the output layer? Is the output layer just the output?
+		// Q: How does the target value correlate to the output layer? Is the output layer just the output?
+		// A: The target value is what we expect the output layer to produce. Yes, the output layer is where the network's output values are.
 		double delta = targetVals[n] - outputLayer[n].getOutputVal();
 		m_error += delta *delta;
 	}
 	m_error /= outputLayer.size() - 1; // get average error squared
+	// Q: How is the m_error used?
+	// A: m_recentAverageError is used to smooth out the error over a number of training samples to see the trend, while m_error is the actual error for the current training sample.
 	m_error = sqrt(m_error); // RMS
 
 	// Implement a recent average measurement:
-
+	// Why is m_recentAverageError and m_error needed?
 	m_recentAverageError = 
 			(m_recentAverageError * m_recentAverageSmoothingFactor + m_error)
 			/ (m_recentAverageSmoothingFactor + 1.0);
 	
 	// Calculate output layer gradients
+	// Q: what is the calcOutputGradients doing in particular?
+	// A: calcOutputGradients calculates the rate of change of the error with respect to the output neuron's output value, which is used to adjust the weights.
+
+	// Q: calcOutputGradient changes a state variable in Neuron called m_gradient - how is that used?
+	// A: m_gradient is used in the backpropagation process to determine how much the weights should be adjusted to reduce the error.
+
+	// Q: "m_gradient is used in the backpropagation process" explain the math that is doing this? and what variables it uses to do this?
+
+	// Q: what is the relationship between Neuron and m_layers?
+	// A: m_layers is a collection of layers, and each layer is a collection of Neuron objects. Neurons are the basic units that make up each layer.
 	for(unsigned n = 0; n < outputLayer.size() - 1; ++n)
 	{
 		outputLayer[n].calcOutputGradients(targetVals[n]);
 	}
 	
 	// Calculate gradients on hidden layers
+	// Q: Again once m_gradient is updated by calcHiddenGradients, how is it used?
+	// A: Once updated, m_gradient is used in the weight update step to adjust the weights of the neurons in the hidden layers to reduce the error.
+
+	// Q: What's gradient? What's the formula to calculate it?
+	// A: The gradient is the partial derivative of the error with respect to the neuron's output. It's calculated using the derivative of the activation function and the error delta.
+
+	// Q: What's the activation function formula? What's the activiation function used for? What line of code shows the activation function?
+
 	for(unsigned layerNum = m_layers.size() - 2; layerNum > 0; --layerNum)
 	{
 		Layer &hiddenLayer = m_layers[layerNum];
@@ -290,6 +315,9 @@ void Net::backProp(const std::vector<double> &targetVals)
 	// For all layers from outputs to first hidden layer,
 	// update connection weights
 
+	// Q: what's the difference between output layers and hidden layers?
+	// A: The output layer is the final layer that produces the network's output. Hidden layers are all the layers between the input and output layers that process the inputs.
+
 	for(unsigned layerNum = m_layers.size() - 1; layerNum > 0; --layerNum)
 	{
 		Layer &layer = m_layers[layerNum];
@@ -297,6 +325,8 @@ void Net::backProp(const std::vector<double> &targetVals)
 
 		for(unsigned n = 0; n < layer.size() - 1; ++n)
 		{
+			// Q: How does it update the input weights using the gradient?
+			// A: It uses the gradient to calculate the change in weights (delta weights) and applies this change to the weights, adjusting them to reduce the error.
 			layer[n].updateInputWeights(prevLayer);
 		}
 	}
@@ -350,6 +380,7 @@ void showVectorVals(string label, vector<double> &v)
 	}
 	cout << endl;
 }
+
 int main()
 {
 	TrainingData trainData("trainingData.txt");
