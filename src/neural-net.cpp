@@ -141,6 +141,26 @@ void Neuron::updateInputWeights(Layer &prevLayer)
 	// in the nuerons in the preceding layer
 
 	// Q: For the weights being updated, which "weights" are they? I thought each neuron has its own individualized weight of all past layer's neurons?
+	// A: Yes, as you can see this class is for the Neuron class. So it's this specific Neuron's "idea" ("perception", "state", "set") of the weights of all past layer's Neurons
+    //    As you can see each Neuron has a state of m_outputWeights (it's weight in the eyes of each subsequent Neuron)
+	//    A weight for each m_myIndex Neuron (subsequent layer's Neuron)
+
+	// Q: How is the m_myIndex set? Is it just increasing by 1? 
+	//    e.g. Layer 1, Neron m_myIndex 1 | Layer 2, Neron m_myIndex 2, Layer 2, Neron m_myIndex 2 | Layer 3, Neron m_myIndex 3 ?
+
+	// Q: How is the learning rate value determined?
+	/* A: The learning rate is a hyperparameter, meaning it's set before the training process begins and typically requires some experimentation to get right. 
+	      It controls how much we adjust the weights with respect to the gradient. Set it too low, and training will take forever. 
+		  Set it too high, and you'll overshoot the optimal values, possibly never converging. 
+		  There's no one-size-fits-all value; it's problem-dependent and requires some trial and error or more sophisticated techniques like learning rate schedules or adaptive learning rates.
+	*/
+
+	// Q: How is the alpha value determined?
+	/* A: Alpha is the momentum coefficient, another hyperparameter. 
+	      It helps the network to not get stuck in local minima and to smooth out the updates by considering the past weight changes. 
+		  Like the learning rate, it's determined through experimentation. It's a balancing act; too much momentum and you might skip over minima, too little and you're not really benefiting from the concept. 
+		  Again, there's no magic number; it's about trying different values and seeing what helps your network learn better.
+	*/
 
 	for(unsigned n = 0; n < prevLayer.size(); ++n)
 	{
@@ -166,8 +186,22 @@ double Neuron::sumDOW(const Layer &nextLayer) const
 
 	// Sum our contributions of the errors at the nodes we feed
 
+	// Q: How does this sumDow work? Explain the equation to me?
+	
+	// Q: It is iterating through each layer, but I thought m_outputWeights is for each neuron and not each layer?
+	//    Why is n the layers and not the index of each neuron in the neural network?
+
+	// Q: Why is it weight * error (gradient)?
+
 	for (unsigned n = 0; n < nextLayer.size() - 1; ++n)
 	{
+		// Print the m_outputWeights for debugging purposes
+		// TODO: include which layer info as well
+        std::cout << "m_outputWeights for Neuron index " << m_myIndex << " to Neuron index " << n << ": ";
+        std::cout << "Weight: " << m_outputWeights[n].weight << ", ";
+        std::cout << "DeltaWeight: " << m_outputWeights[n].deltaWeight << std::endl;
+
+		// Actual logic
 		sum += m_outputWeights[n].weight * nextLayer[n].m_gradient;
 	}
 
@@ -176,7 +210,17 @@ double Neuron::sumDOW(const Layer &nextLayer) const
 
 void Neuron::calcHiddenGradients(const Layer &nextLayer)
 {
-	double dow = sumDOW(nextLayer);
+	// Q: So this is calculating the m_gradient for "this" neuron and storing it in the state
+	// Then this m_gradient is used to "update" the weights of all the past Neuron's in the eyes of this Neuron. (Each neuron weight is specific to the subsequent neuron)
+	// Is my summary correct?
+
+	// Q: m_outputVal was stored from feedForward correct?
+
+	// Q: was m_outputVal created from after running it through activiation function (transfer function) or before? It's only considered "x" (an input) if before right?
+
+	// Q: What does m_ stand for?
+	// A: the prefix m_ is a naming convention used to indicate that a variable is a member of a class. It's a common practice in C++ (and other programming languages) to use a prefix or suffix to distinguish member variables (also known as instance variables or fields) from local variables and parameters.
+	double dow = sumDOW(nextLayer); // dow stands for "derivative of weights"
 	m_gradient = dow * Neuron::transferFunctionDerivative(m_outputVal);
 }
 
@@ -186,6 +230,7 @@ void Neuron::calcOutputGradients(double targetVals)
 	m_gradient = delta * Neuron::transferFunctionDerivative(m_outputVal);
 }
 
+// tanh is used to produce "non-linearity" aka not a value between 0 and 1 (a line) but only 0 or 1 (a two cliffs)
 double Neuron::transferFunction(double x)
 {
 	// tanh - output range [-1.0..1.0]
@@ -313,51 +358,6 @@ void Net::backProp(const std::vector<double> &targetVals)
 	Layer &outputLayer = m_layers.back();
 	m_error = 0.0;
 
-	// TODO: print out outputLayer.size()
-	// cout << "Output Layer Size: " << outputLayer.size() << endl;
-
-	// Debug: Print out the number of hidden layers
-    // unsigned numHiddenLayers = m_layers.size() - 2; // Subtract input and output layers
-    // cout << "Number of Hidden Layers: " << numHiddenLayers << endl;
-	// cout << "----" << endl;
-
-    // Debug: Print out the number of neurons in each hidden and each output layer
-    // Print out the number of neurons in each layer and identify the layer type
-	cout << "----" << endl;
-	cout << "Print out the number of neurons in each hidden and each output layer" << endl;
-    for(unsigned layerNum = 0; layerNum < m_layers.size(); ++layerNum)
-    {
-        // Determine the layer type
-        string layerType;
-        if(layerNum == 0) {
-            layerType = "Input Layer";
-        } else if(layerNum == m_layers.size() - 1) {
-            layerType = "Output Layer";
-        } else {
-            layerType = "Hidden Layer " + to_string(layerNum);
-        }
-
-        // Exclude the bias neuron for hidden and output layers
-        unsigned numNeurons = layerNum < m_layers.size() - 1 ? m_layers[layerNum].size() - 1 : m_layers[layerNum].size();
-        cout << layerType << " (Layer " << layerNum << ") - Neuron Count: " << numNeurons << endl;
-    }
-	cout << "----" << endl;
-
-    // Debug: Print out how the neurons are laid out in each hidden and output layer
-	cout << "Print out how the neurons are laid out in each hidden and output layer" << endl;
-    for(unsigned layerNum = 0; layerNum < m_layers.size(); ++layerNum)
-    {
-        cout << "Layer " << layerNum << " layout: ";
-        for(unsigned neuronNum = 0; neuronNum < m_layers[layerNum].size(); ++neuronNum)
-        {
-            // Print neuron index and number of outputs
-            unsigned numOutputs = m_layers[layerNum][neuronNum].m_outputWeights.size();
-            cout << "Neuron " << neuronNum << " - Outputs: " << numOutputs << " ";
-        }
-        cout << endl;
-    }
-	cout << "----" << endl;
-
 	// Q: Are the number of neurons for each layer hardcoded? How to "figure out" how many neurons to use?
 	// A: Empirical magic
 
@@ -377,7 +377,8 @@ void Net::backProp(const std::vector<double> &targetVals)
 	m_error = sqrt(m_error); // RMS
 
 	// Implement a recent average measurement:
-	// Why is m_recentAverageError and m_error needed?
+
+	// Q: Why is m_recentAverageError and m_error needed? Why not just m_error?
 	m_recentAverageError = 
 			(m_recentAverageError * m_recentAverageSmoothingFactor + m_error)
 			/ (m_recentAverageSmoothingFactor + 1.0);
@@ -453,6 +454,7 @@ void Net::backProp(const std::vector<double> &targetVals)
 	// A: Once updated, m_gradient is used in the weight update step to adjust the weights of the neurons in the hidden layers to reduce the error.
 
 	// Q: Give me the math formula for the above Q/A
+	// A: m_outputWeights[n].weight * nextLayer[n].m_gradient * activation function derivative
 
 	for(unsigned layerNum = m_layers.size() - 2; layerNum > 0; --layerNum)
 	{
@@ -461,6 +463,10 @@ void Net::backProp(const std::vector<double> &targetVals)
 
 		for(unsigned n = 0; n < hiddenLayer.size(); ++n)
 		{
+			// Debug output for layer information
+            std::cout << "Calculating gradients for Layer " << layerNum
+                      << ", Neuron index " << n << std::endl;
+
 			hiddenLayer[n].calcHiddenGradients(nextLayer);
 		}
 	}
@@ -483,10 +489,6 @@ void Net::backProp(const std::vector<double> &targetVals)
 			// gradient * learning rate (eta) + momentum (alpha times the previous delta weight). 
 			// This calculated delta weight is then added to the current weight to adjust it. 
 			// The idea is to reduce the error by nudging the weights in the direction that decreases the gradient of the error with respect to the weights.
-
-			// Q: How is the learning rate value determined?
-
-			// Q: How is the alpha value determined?
 
 			// Q: What's "input" weights? What does the "input" mean?
 			layer[n].updateInputWeights(prevLayer);
@@ -526,7 +528,9 @@ Net::Net(const vector<unsigned> &topology)
 		// add a bias neuron to the layer:
 		for(unsigned neuronNum = 0; neuronNum <= topology[layerNum]; ++neuronNum){
 			m_layers.back().push_back(Neuron(numOutputs, neuronNum));
-			cout << "Mad a Neuron!" << endl;
+			// cout << "Made a Neuron!" << endl;
+			// Improved:
+			cout << "Made a Neuron in Layer " << layerNum << " with index " << neuronNum << " and " << numOutputs << " outputs." << endl;
 		}
 
 		// Force the bias node's output value to 1.0. It's the last neuron created above
@@ -544,6 +548,9 @@ void showVectorVals(string label, vector<double> &v)
 	cout << endl;
 }
 
+// IMPORTANT: this can be removed, set low for learning purposes to see how backProp is functioning
+int total_passes_allowed = 2;
+
 int main()
 {
 	TrainingData trainData("trainingData.txt");
@@ -560,7 +567,7 @@ int main()
 
 	vector<double> inputVals, targetVals, resultVals;
 	int trainingPass = 0;
-	while(!trainData.isEof())
+	while(!trainData.isEof() && trainingPass < total_passes_allowed)
 	{
 		++trainingPass;
 		cout << endl << "Pass" << trainingPass;
@@ -589,9 +596,8 @@ int main()
               The purpose of reusing backProp on each input is to iteratively adjust the network's weights in response to the error observed for each training example. This is how the network learns from the data over time.
 		*/
 
-		// Q: Will backprop eventually produce no further improvements in the error?
-
-		// Q: Do we always want to run backprop to the point that error is zero? Is a zero error even possible?
+		// Q: Will backprop eventually produce no further improvements in the error? Do we always want to run backprop to the point that error is zero? Is a zero error even possible?
+		// A: Yes, if it produces zero error/gradient it usually means the neural network "overfit" the training set and may perform poorly on new data
 		myNet.backProp(targetVals);
 
 		// Report how well the training is working, average over recnet

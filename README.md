@@ -82,3 +82,7 @@ Net recent average error: 0.0205236
 Pass2002
 Done
 ```
+
+# TODO
+
+Rework the code to add another hidden layer to understand how the m_outputWeights[n].weight for each Neuron might look if multiple layers uses its output. (Or perhaps just subsequent layer only does - need to know)
